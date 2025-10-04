@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}Error - FraudGuard AI{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="error-container">
+        <h1>⚠️ Error</h1>
+        <p>{{ error }}</p>
+        <div class="error-actions">
+            <a href="{{ url_for('index') }}" class="btn btn-primary">Go Home</a>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Dashboard</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

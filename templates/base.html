@@ -10,11 +10,19 @@
     <header>
         <div class="container">
             <div class="header-content">
-                <div class="logo">FraudGuard AI</div>
+                <div class="logo">
+                    <a href="{{ url_for('index') }}" style="color: white; text-decoration: none;">
+                        FraudGuard AI
+                    </a>
+                </div>
                 <nav>
                     <ul>
+                        <li><a href="{{ url_for('index') }}" class="{% if request.endpoint == 'index' %}active{% endif %}">Home</a></li>
                         <li><a href="{{ url_for('dashboard') }}" class="{% if request.endpoint == 'dashboard' %}active{% endif %}">Dashboard</a></li>
                         <li><a href="{{ url_for('fraud_detection') }}" class="{% if request.endpoint == 'fraud_detection' %}active{% endif %}">Fraud Detection</a></li>
+                        <li><a href="{{ url_for('case_management') }}" class="{% if request.endpoint == 'case_management' %}active{% endif %}">Case Management</a></li>
+                        <li><a href="{{ url_for('reports') }}" class="{% if request.endpoint == 'reports' %}active{% endif %}">Reports</a></li>
+                        <li><a href="{{ url_for('admin') }}" class="{% if request.endpoint == 'admin' %}active{% endif %}">Admin</a></li>
                     </ul>
                 </nav>
             </div>
@@ -28,6 +36,16 @@
                 <ul>
                     <li><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
                     <li><a href="{{ url_for('fraud_detection') }}">Fraud Detection</a></li>
+                    <li><a href="{{ url_for('case_management') }}">Case Management</a></li>
+                    <li><a href="{{ url_for('reports') }}">Reports & Analytics</a></li>
+                    <li><a href="{{ url_for('admin') }}">Admin Panel</a></li>
+                </ul>
+
+                <h3>Quick Actions</h3>
+                <ul>
+                    <li><a href="{{ url_for('fraud_detection') }}">Analyze Transaction</a></li>
+                    <li><a href="{{ url_for('case_management') }}">Review Cases</a></li>
+                    <li><a href="{{ url_for('reports') }}">View Reports</a></li>
                 </ul>
             </aside>
 
@@ -39,7 +57,7 @@
 
     <footer>
         <div class="container">
-            <p>Credit Card Fraud Detection System &copy; 2023 | Based on research document: "Credit Card Fraud Detection Using Random Forest and Logistic Regression"</p>
+            <p>Credit Card Fraud Detection System &copy; 2023 | Based on research: "Credit Card Fraud Detection Using Random Forest and Logistic Regression"</p>
         </div>
     </footer>
 

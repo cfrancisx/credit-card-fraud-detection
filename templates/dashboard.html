@@ -15,7 +15,13 @@
     <div class="dashboard-card">
         <h3>Fraudulent</h3>
         <div class="value">{{ metrics.fraudulent_count }}</div>
-        <div class="label">{{ "%.2f"|format((metrics.fraudulent_count / metrics.total_transactions * 100) if metrics.total_transactions > 0 else 0) }}% of total</div>
+        <div class="label">
+            {% if metrics.total_transactions > 0 %}
+                {{ "%.2f"|format((metrics.fraudulent_count / metrics.total_transactions * 100)) }}% of total
+            {% else %}
+                0% of total
+            {% endif %}
+        </div>
     </div>
     <div class="dashboard-card">
         <h3>Detection Rate</h3>
@@ -32,6 +38,7 @@
 <div class="card">
     <h2>Recent Transactions</h2>
     <div class="transaction-history">
+        {% if transactions %}
         <table>
             <thead>
                 <tr>
@@ -47,15 +54,26 @@
                 {% for transaction in transactions %}
                 <tr>
                     <td>{{ transaction.transaction_id }}</td>
-                    <td>{{ transaction.cardholder_name }}</td>
+                    <td>{{ transaction.cardholder_name or 'Unknown' }}</td>
                     <td>${{ "%.2f"|format(transaction.amount) }}</td>
-                    <td>{{ transaction.merchant_id }}</td>
-                    <td>{{ transaction.location }}</td>
-                    <td>{{ transaction.date_time.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td>{{ transaction.merchant_id or 'Unknown' }}</td>
+                    <td>{{ transaction.location or 'Unknown' }}</td>
+                    <td>
+                        {% if transaction.date_time %}
+                            {{ transaction.date_time.strftime('%Y-%m-%d %H:%M') }}
+                        {% else %}
+                            Unknown
+                        {% endif %}
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
+        {% else %}
+        <div class="empty-state">
+            <p>No transactions found. <a href="{{ url_for('fraud_detection') }}">Analyze your first transaction</a></p>
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}
