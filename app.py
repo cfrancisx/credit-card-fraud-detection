@@ -1,16 +1,21 @@
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 from config import Config
-from models.database import Database
+# Use the appropriate database class
+try:
+    from models.database_render import DatabaseRender as Database
+except ImportError:
+    from models.database import Database
 from models.fraud_models import FraudDetectionModels
-import json
+import os
 from datetime import datetime
 
 app = Flask(__name__)
 app.config.from_object(Config)
 
 # Initialize database and models
-db = Database(app)
+db = Database()
 fraud_models = FraudDetectionModels()
+
 
 @app.route('/')
 def index():
