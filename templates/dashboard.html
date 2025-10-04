@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card">
+    <h2>Fraud Detection Dashboard</h2>
+    <p>Welcome to the Credit Card Fraud Detection System. This system uses Random Forest and Logistic Regression algorithms to detect fraudulent transactions in real-time.</p>
+</div>
+
+<div class="dashboard-cards">
+    <div class="dashboard-card">
+        <h3>Total Transactions</h3>
+        <div class="value">{{ metrics.total_transactions }}</div>
+        <div class="label">Last 30 days</div>
+    </div>
+    <div class="dashboard-card">
+        <h3>Fraudulent</h3>
+        <div class="value">{{ metrics.fraudulent_count }}</div>
+        <div class="label">{{ "%.2f"|format((metrics.fraudulent_count / metrics.total_transactions * 100) if metrics.total_transactions > 0 else 0) }}% of total</div>
+    </div>
+    <div class="dashboard-card">
+        <h3>Detection Rate</h3>
+        <div class="value">{{ metrics.detection_rate }}%</div>
+        <div class="label">Accuracy</div>
+    </div>
+    <div class="dashboard-card">
+        <h3>Suspicious</h3>
+        <div class="value">{{ metrics.suspicious_count }}</div>
+        <div class="label">Under review</div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Recent Transactions</h2>
+    <div class="transaction-history">
+        <table>
+            <thead>
+                <tr>
+                    <th>Transaction ID</th>
+                    <th>Cardholder</th>
+                    <th>Amount</th>
+                    <th>Merchant</th>
+                    <th>Location</th>
+                    <th>Date/Time</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for transaction in transactions %}
+                <tr>
+                    <td>{{ transaction.transaction_id }}</td>
+                    <td>{{ transaction.cardholder_name }}</td>
+                    <td>${{ "%.2f"|format(transaction.amount) }}</td>
+                    <td>{{ transaction.merchant_id }}</td>
+                    <td>{{ transaction.location }}</td>
+                    <td>{{ transaction.date_time.strftime('%Y-%m-%d %H:%M') }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,396 @@
+{% extends "base.html" %}
+
+{% block title %}Case Management - FraudGuard AI{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="header-content">
+        <h1>Fraud Case Management</h1>
+        <div class="header-actions">
+            <button class="btn btn-primary" onclick="exportCases()">
+                📊 Export Report
+            </button>
+            <button class="btn btn-secondary" onclick="refreshCases()">
+                🔄 Refresh
+            </button>
+        </div>
+    </div>
+    <p class="page-description">Monitor, review, and manage suspicious transaction cases flagged by the fraud detection system.</p>
+</div>
+
+<!-- Statistics Cards -->
+<div class="stats-cards">
+    <div class="stat-card">
+        <div class="stat-icon pending">⏳</div>
+        <div class="stat-info">
+            <h3>{{ cases|length }}</h3>
+            <p>Total Cases</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon high">🔴</div>
+        <div class="stat-info">
+            <h3>{{ cases|selectattr("risk_level", "equalto", "High")|list|length }}</h3>
+            <p>High Risk</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon medium">🟡</div>
+        <div class="stat-info">
+            <h3>{{ cases|selectattr("risk_level", "equalto", "Medium")|list|length }}</h3>
+            <p>Medium Risk</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon resolved">✅</div>
+        <div class="stat-info">
+            <h3>{{ cases|selectattr("status", "equalto", "Resolved")|list|length }}</h3>
+            <p>Resolved</p>
+        </div>
+    </div>
+</div>
+
+<!-- Filters and Search -->
+<div class="filters-section">
+    <div class="filter-group">
+        <input type="text" id="caseSearch" placeholder="Search cases..." class="search-input" onkeyup="filterCases()">
+        <select id="statusFilter" class="filter-select" onchange="filterCases()">
+            <option value="">All Status</option>
+            <option value="Pending">Pending</option>
+            <option value="Under Review">Under Review</option>
+            <option value="Resolved">Resolved</option>
+            <option value="Escalated">Escalated</option>
+        </select>
+        <select id="riskFilter" class="filter-select" onchange="filterCases()">
+            <option value="">All Risk Levels</option>
+            <option value="High">High Risk</option>
+            <option value="Medium">Medium Risk</option>
+            <option value="Low">Low Risk</option>
+        </select>
+        <button class="btn btn-outline" onclick="clearFilters()">
+            🗑️ Clear Filters
+        </button>
+    </div>
+</div>
+
+<!-- Cases Table -->
+<div class="card">
+    <div class="table-container">
+        <table class="cases-table" id="casesTable">
+            <thead>
+                <tr>
+                    <th>Case ID</th>
+                    <th>Transaction</th>
+                    <th>Cardholder</th>
+                    <th>Amount</th>
+                    <th>Risk Level</th>
+                    <th>Status</th>
+                    <th>Date Flagged</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for case in cases %}
+                <tr class="case-row risk-{{ case.risk_level|lower }}" data-status="{{ case.status }}" data-risk="{{ case.risk_level }}">
+                    <td>
+                        <div class="case-id">{{ case.case_id }}</div>
+                        <small class="text-muted">TXN: {{ case.transaction_id }}</small>
+                    </td>
+                    <td>
+                        <div class="transaction-info">
+                            <strong>{{ case.merchant_id|title }}</strong>
+                            <div class="location">{{ case.location }}</div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="cardholder-info">
+                            <strong>{{ case.cardholder_name }}</strong>
+                            <div class="account">Acc: {{ case.transaction_id[:8] }}...</div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="amount">${{ "%.2f"|format(case.amount) }}</div>
+                    </td>
+                    <td>
+                        <span class="risk-badge risk-{{ case.risk_level|lower }}">
+                            {{ case.risk_level }}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="status-badge status-{{ case.status|lower|replace(' ', '-') }}">
+                            {{ case.status }}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="date-info">
+                            {{ case.created_at.strftime('%Y-%m-%d') }}
+                            <div class="time">{{ case.created_at.strftime('%H:%M') }}</div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn-action view" onclick="viewCase('{{ case.case_id }}')" title="View Details">
+                                👁️
+                            </button>
+                            <button class="btn-action review" onclick="reviewCase('{{ case.case_id }}')" title="Review Case">
+                                📋
+                            </button>
+                            <button class="btn-action resolve" onclick="resolveCase('{{ case.case_id }}')" title="Mark Resolved">
+                                ✅
+                            </button>
+                            <button class="btn-action escalate" onclick="escalateCase('{{ case.case_id }}')" title="Escalate">
+                                ⬆️
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" class="no-cases">
+                        <div class="empty-state">
+                            <div class="empty-icon">📭</div>
+                            <h3>No Cases Found</h3>
+                            <p>There are currently no fraud cases requiring attention.</p>
+                            <button class="btn btn-primary" onclick="window.location.href='/fraud-detection'">
+                                Analyze New Transaction
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Case Details Modal -->
+<div id="caseModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Case Details</h2>
+            <span class="close" onclick="closeModal()">&times;</span>
+        </div>
+        <div class="modal-body" id="caseDetails">
+            <!-- Dynamic content will be loaded here -->
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions Panel -->
+<div class="quick-actions">
+    <h3>Quick Actions</h3>
+    <div class="action-buttons-grid">
+        <button class="quick-action-btn" onclick="bulkApprove()">
+            <span class="action-icon">✅</span>
+            <span class="action-text">Approve Low Risk</span>
+        </button>
+        <button class="quick-action-btn" onclick="bulkEscalate()">
+            <span class="action-icon">⬆️</span>
+            <span class="action-text">Escalate High Risk</span>
+        </button>
+        <button class="quick-action-btn" onclick="generateReport()">
+            <span class="action-icon">📈</span>
+            <span class="action-text">Generate Report</span>
+        </button>
+        <button class="quick-action-btn" onclick="notifyAnalysts()">
+            <span class="action-icon">🔔</span>
+            <span class="action-text">Notify Team</span>
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Sample case data (in real app, this would come from backend)
+const casesData = [
+    {% for case in cases %}
+    {
+        id: '{{ case.case_id }}',
+        transactionId: '{{ case.transaction_id }}',
+        cardholder: '{{ case.cardholder_name }}',
+        amount: {{ case.amount }},
+        merchant: '{{ case.merchant_id }}',
+        location: '{{ case.location }}',
+        riskLevel: '{{ case.risk_level }}',
+        status: '{{ case.status }}',
+        date: '{{ case.created_at.strftime("%Y-%m-%d %H:%M") }}',
+        score: 0.85
+    },
+    {% endfor %}
+];
+
+function filterCases() {
+    const searchTerm = document.getElementById('caseSearch').value.toLowerCase();
+    const statusFilter = document.getElementById('statusFilter').value;
+    const riskFilter = document.getElementById('riskFilter').value;
+    
+    const rows = document.querySelectorAll('.case-row');
+    
+    rows.forEach(row => {
+        const rowText = row.textContent.toLowerCase();
+        const rowStatus = row.getAttribute('data-status');
+        const rowRisk = row.getAttribute('data-risk');
+        
+        const matchesSearch = rowText.includes(searchTerm);
+        const matchesStatus = !statusFilter || rowStatus === statusFilter;
+        const matchesRisk = !riskFilter || rowRisk === riskFilter;
+        
+        if (matchesSearch && matchesStatus && matchesRisk) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+
+function clearFilters() {
+    document.getElementById('caseSearch').value = '';
+    document.getElementById('statusFilter').value = '';
+    document.getElementById('riskFilter').value = '';
+    filterCases();
+}
+
+function viewCase(caseId) {
+    const caseData = casesData.find(c => c.id === caseId);
+    if (caseData) {
+        document.getElementById('caseDetails').innerHTML = `
+            <div class="case-detail-section">
+                <h3>Case Information</h3>
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <label>Case ID:</label>
+                        <span>${caseData.id}</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Transaction ID:</label>
+                        <span>${caseData.transactionId}</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Status:</label>
+                        <span class="status-badge status-${caseData.status.toLowerCase().replace(' ', '-')}">${caseData.status}</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Risk Level:</label>
+                        <span class="risk-badge risk-${caseData.riskLevel.toLowerCase()}">${caseData.riskLevel}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="case-detail-section">
+                <h3>Transaction Details</h3>
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <label>Cardholder:</label>
+                        <span>${caseData.cardholder}</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Amount:</label>
+                        <span class="amount">$${caseData.amount.toFixed(2)}</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Merchant:</label>
+                        <span>${caseData.merchant}</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Location:</label>
+                        <span>${caseData.location}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="case-detail-section">
+                <h3>Fraud Analysis</h3>
+                <div class="fraud-metrics">
+                    <div class="metric">
+                        <span class="metric-label">Risk Score</span>
+                        <span class="metric-value">${(caseData.score * 100).toFixed(1)}%</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Confidence</span>
+                        <span class="metric-value">High</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-actions">
+                <button class="btn btn-primary" onclick="reviewCase('${caseId}')">Review Case</button>
+                <button class="btn btn-success" onclick="resolveCase('${caseId}')">Mark Resolved</button>
+                <button class="btn btn-warning" onclick="escalateCase('${caseId}')">Escalate</button>
+                <button class="btn btn-outline" onclick="closeModal()">Close</button>
+            </div>
+        `;
+        document.getElementById('caseModal').style.display = 'block';
+    }
+}
+
+function closeModal() {
+    document.getElementById('caseModal').style.display = 'none';
+}
+
+function reviewCase(caseId) {
+    alert(`Opening case ${caseId} for detailed review...`);
+    // In real app, redirect to detailed review page
+}
+
+function resolveCase(caseId) {
+    if (confirm(`Mark case ${caseId} as resolved?`)) {
+        alert(`Case ${caseId} marked as resolved.`);
+        // In real app, update case status via API
+    }
+}
+
+function escalateCase(caseId) {
+    if (confirm(`Escalate case ${caseId} to senior analyst?`)) {
+        alert(`Case ${caseId} escalated.`);
+        // In real app, update case status via API
+    }
+}
+
+function exportCases() {
+    alert('Exporting case report...');
+    // In real app, generate and download CSV/PDF report
+}
+
+function refreshCases() {
+    window.location.reload();
+}
+
+function bulkApprove() {
+    if (confirm('Approve all low-risk cases?')) {
+        alert('Low-risk cases approved in bulk.');
+        // In real app, batch update via API
+    }
+}
+
+function bulkEscalate() {
+    if (confirm('Escalate all high-risk cases?')) {
+        alert('High-risk cases escalated in bulk.');
+        // In real app, batch update via API
+    }
+}
+
+function generateReport() {
+    alert('Generating comprehensive case report...');
+    // In real app, generate detailed report
+}
+
+function notifyAnalysts() {
+    alert('Notifying fraud analysis team...');
+    // In real app, send notifications
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    const modal = document.getElementById('caseModal');
+    if (event.target === modal) {
+        closeModal();
+    }
+}
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Case Management loaded with', casesData.length, 'cases');
+});
+</script>
+{% endblock %}

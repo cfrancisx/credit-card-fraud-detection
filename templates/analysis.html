@@ -1,0 +1,342 @@
+{% extends "base.html" %}
+
+{% block title %}Transaction Analysis - FraudGuard AI{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="analysis-header">
+        <h2>Transaction Fraud Analysis</h2>
+        <div class="transaction-meta">
+            <span class="analysis-id">Analysis ID: {{ analysis_id }}</span>
+            <span class="analysis-time">{{ analysis_time }}</span>
+        </div>
+    </div>
+
+    <!-- Transaction Details -->
+    <div class="transaction-details">
+        <h3>Transaction Information</h3>
+        <div class="details-grid">
+            <div class="detail-item">
+                <label>Cardholder ID:</label>
+                <span>{{ transaction_data.cardholder_id }}</span>
+            </div>
+            <div class="detail-item">
+                <label>Amount:</label>
+                <span class="amount">${{ "%.2f"|format(transaction_data.amount) }}</span>
+            </div>
+            <div class="detail-item">
+                <label>Merchant Category:</label>
+                <span class="merchant">{{ transaction_data.merchant_category|title }}</span>
+            </div>
+            <div class="detail-item">
+                <label>Location:</label>
+                <span class="location">{{ transaction_data.location }}</span>
+            </div>
+            <div class="detail-item">
+                <label>Transaction Time:</label>
+                <span class="time">{{ transaction_data.date_time }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Risk Assessment -->
+    <div class="risk-assessment">
+        <h3>Fraud Risk Assessment</h3>
+        <div class="risk-score-card">
+            <div class="final-score">
+                <div class="score-circle {% if final_risk == 'High' %}high-risk{% elif final_risk == 'Medium' %}medium-risk{% else %}low-risk{% endif %}">
+                    <span class="score-value">{{ "%.1f"|format(prediction.final_score * 100) }}%</span>
+                    <span class="score-label">Risk Score</span>
+                </div>
+            </div>
+            <div class="risk-description">
+                <h4 class="risk-level {{ final_risk|lower }}-risk-text">
+                    {{ final_risk }} Risk - {{ decision }}
+                </h4>
+                <p class="risk-explanation">
+                    {% if final_risk == 'High' %}
+                    This transaction exhibits multiple characteristics commonly associated with fraudulent activity. Immediate review and potential blocking recommended.
+                    {% elif final_risk == 'Medium' %}
+                    This transaction shows some suspicious patterns that warrant further investigation. Manual review suggested.
+                    {% else %}
+                    This transaction appears to be legitimate based on current analysis. Standard processing recommended.
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Model Comparison -->
+    <div class="model-comparison">
+        <h3>Machine Learning Model Analysis</h3>
+        <div class="models-container">
+            <!-- Random Forest Model -->
+            <div class="model-card {% if prediction.rf_score >= 0.7 %}high-risk-card{% elif prediction.rf_score >= 0.3 %}medium-risk-card{% else %}low-risk-card{% endif %}">
+                <div class="model-header">
+                    <h4>Random Forest Model</h4>
+                    <span class="model-badge">Ensemble Learning</span>
+                </div>
+                <div class="model-metrics">
+                    <div class="metric">
+                        <span class="metric-label">Fraud Probability</span>
+                        <span class="metric-value">{{ "%.2f"|format(prediction.rf_score) }}</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Decision</span>
+                        <span class="metric-decision {% if prediction.rf_score >= 0.7 %}fraud{% elif prediction.rf_score >= 0.3 %}suspicious{% else %}legitimate{% endif %}">
+                            {% if prediction.rf_score >= 0.7 %}FRAUD{% elif prediction.rf_score >= 0.3 %}SUSPICIOUS{% else %}LEGITIMATE{% endif %}
+                        </span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Confidence</span>
+                        <span class="metric-confidence">
+                            {% if prediction.rf_score >= 0.8 %}Very High
+                            {% elif prediction.rf_score >= 0.6 %}High
+                            {% elif prediction.rf_score >= 0.4 %}Medium
+                            {% else %}Low
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+                <div class="model-explanation">
+                    <p><strong>Algorithm:</strong> Ensemble of decision trees</p>
+                    <p><strong>Strengths:</strong> Handles complex patterns, robust to outliers</p>
+                </div>
+            </div>
+
+            <!-- Logistic Regression Model -->
+            <div class="model-card {% if prediction.lr_score >= 0.7 %}high-risk-card{% elif prediction.lr_score >= 0.3 %}medium-risk-card{% else %}low-risk-card{% endif %}">
+                <div class="model-header">
+                    <h4>Logistic Regression</h4>
+                    <span class="model-badge">Statistical Model</span>
+                </div>
+                <div class="model-metrics">
+                    <div class="metric">
+                        <span class="metric-label">Fraud Probability</span>
+                        <span class="metric-value">{{ "%.2f"|format(prediction.lr_score) }}</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Decision</span>
+                        <span class="metric-decision {% if prediction.lr_score >= 0.7 %}fraud{% elif prediction.lr_score >= 0.3 %}suspicious{% else %}legitimate{% endif %}">
+                            {% if prediction.lr_score >= 0.7 %}FRAUD{% elif prediction.lr_score >= 0.3 %}SUSPICIOUS{% else %}LEGITIMATE{% endif %}
+                        </span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Confidence</span>
+                        <span class="metric-confidence">
+                            {% if prediction.lr_score >= 0.8 %}Very High
+                            {% elif prediction.lr_score >= 0.6 %}High
+                            {% elif prediction.lr_score >= 0.4 %}Medium
+                            {% else %}Low
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+                <div class="model-explanation">
+                    <p><strong>Algorithm:</strong> Statistical probability model</p>
+                    <p><strong>Strengths:</strong> Highly interpretable, fast predictions</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Feature Analysis -->
+    <div class="feature-analysis">
+        <h3>Feature Analysis</h3>
+        <div class="features-grid">
+            <div class="feature-item {% if transaction_data.amount > 1000 %}high-risk-feature{% elif transaction_data.amount > 500 %}medium-risk-feature{% else %}low-risk-feature{% endif %}">
+                <span class="feature-name">Transaction Amount</span>
+                <span class="feature-value">${{ "%.2f"|format(transaction_data.amount) }}</span>
+                <span class="feature-risk">
+                    {% if transaction_data.amount > 1000 %}High Risk
+                    {% elif transaction_data.amount > 500 %}Medium Risk
+                    {% else %}Low Risk
+                    {% endif %}
+                </span>
+            </div>
+            
+            <div class="feature-item {% if transaction_data.merchant_category in ['online', 'travel'] %}medium-risk-feature{% else %}low-risk-feature{% endif %}">
+                <span class="feature-name">Merchant Category</span>
+                <span class="feature-value">{{ transaction_data.merchant_category|title }}</span>
+                <span class="feature-risk">
+                    {% if transaction_data.merchant_category in ['online', 'travel'] %}Medium Risk
+                    {% else %}Low Risk
+                    {% endif %}
+                </span>
+            </div>
+            
+            <div class="feature-item {% if 'foreign' in transaction_data.location.lower() %}high-risk-feature{% else %}low-risk-feature{% endif %}">
+                <span class="feature-name">Location</span>
+                <span class="feature-value">{{ transaction_data.location }}</span>
+                <span class="feature-risk">
+                    {% if 'foreign' in transaction_data.location.lower() %}High Risk
+                    {% else %}Low Risk
+                    {% endif %}
+                </span>
+            </div>
+            
+            <div class="feature-item low-risk-feature">
+                <span class="feature-name">Time of Day</span>
+                <span class="feature-value">{{ transaction_data.date_time.split(' ')[1] if ' ' in transaction_data.date_time else 'N/A' }}</span>
+                <span class="feature-risk">Low Risk</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="action-panel">
+        <h3>Recommended Actions</h3>
+        <div class="action-buttons">
+            {% if final_risk == 'High' %}
+            <button class="btn btn-danger btn-large" onclick="takeAction('block')">
+                🚫 Block Transaction
+            </button>
+            <button class="btn btn-warning btn-large" onclick="takeAction('review')">
+                🔍 Send for Urgent Review
+            </button>
+            <button class="btn btn-secondary" onclick="takeAction('notify')">
+                📱 Notify Cardholder
+            </button>
+            {% elif final_risk == 'Medium' %}
+            <button class="btn btn-warning btn-large" onclick="takeAction('review')">
+                🔍 Send for Review
+            </button>
+            <button class="btn btn-success" onclick="takeAction('approve')">
+                ✅ Approve with Monitoring
+            </button>
+            <button class="btn btn-secondary" onclick="takeAction('notify')">
+                📱 Notify Cardholder
+            </button>
+            {% else %}
+            <button class="btn btn-success btn-large" onclick="takeAction('approve')">
+                ✅ Approve Transaction
+            </button>
+            <button class="btn btn-secondary" onclick="takeAction('monitor')">
+                👁️ Monitor for Patterns
+            </button>
+            {% endif %}
+            
+            <button class="btn btn-outline" onclick="analyzeNewTransaction()">
+                🔄 Analyze New Transaction
+            </button>
+        </div>
+    </div>
+
+    <!-- Case Information -->
+    {% if case_created %}
+    <div class="case-info">
+        <div class="case-alert">
+            <h4>📋 Case Created</h4>
+            <p>A fraud case has been automatically created for this transaction and assigned to the case management system.</p>
+            <a href="{{ url_for('case_management') }}" class="btn btn-outline">View Case Management</a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Analysis History -->
+<div class="card">
+    <h3>Similar Historical Patterns</h3>
+    <div class="similar-transactions">
+        <div class="similar-item">
+            <span class="similar-amount">$1,200.00</span>
+            <span class="similar-merchant">Online Electronics</span>
+            <span class="similar-risk high-risk">87% Risk</span>
+            <span class="similar-outcome fraudulent">Confirmed Fraud</span>
+        </div>
+        <div class="similar-item">
+            <span class="similar-amount">$85.50</span>
+            <span class="similar-merchant">Local Grocery</span>
+            <span class="similar-risk low-risk">12% Risk</span>
+            <span class="similar-outcome legitimate">Legitimate</span>
+        </div>
+        <div class="similar-item">
+            <span class="similar-amount">$650.00</span>
+            <span class="similar-merchant">Travel Agency</span>
+            <span class="similar-risk medium-risk">45% Risk</span>
+            <span class="similar-outcome legitimate">Legitimate</span>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function takeAction(action) {
+    const transactionData = {{ transaction_data|tojson }};
+    const analysisResult = {{ prediction|tojson }};
+    
+    switch(action) {
+        case 'block':
+            if(confirm('Are you sure you want to block this transaction? This action cannot be undone.')) {
+                alert('Transaction blocked successfully. Cardholder has been notified.');
+                logAction('BLOCKED', transactionData, analysisResult);
+            }
+            break;
+            
+        case 'approve':
+            if(confirm('Approve this transaction for processing?')) {
+                alert('Transaction approved and processed successfully.');
+                logAction('APPROVED', transactionData, analysisResult);
+            }
+            break;
+            
+        case 'review':
+            alert('Transaction sent to fraud analysts for manual review.');
+            logAction('SENT_FOR_REVIEW', transactionData, analysisResult);
+            break;
+            
+        case 'notify':
+            alert('Cardholder notification sent via SMS and email.');
+            logAction('NOTIFIED', transactionData, analysisResult);
+            break;
+            
+        case 'monitor':
+            alert('Transaction approved and added to monitoring list.');
+            logAction('APPROVED_WITH_MONITORING', transactionData, analysisResult);
+            break;
+    }
+}
+
+function logAction(action, transaction, analysis) {
+    // In a real system, this would send data to backend
+    console.log('Action taken:', action);
+    console.log('Transaction:', transaction);
+    console.log('Analysis:', analysis);
+    
+    // You would typically make an API call here
+    fetch('/api/log-action', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            action: action,
+            transaction: transaction,
+            analysis: analysis,
+            timestamp: new Date().toISOString()
+        })
+    });
+}
+
+function analyzeNewTransaction() {
+    window.location.href = "{{ url_for('fraud_detection') }}";
+}
+
+// Update risk indicators in real-time
+document.addEventListener('DOMContentLoaded', function() {
+    const finalScore = {{ prediction.final_score }};
+    updateRiskIndicators(finalScore);
+});
+
+function updateRiskIndicators(score) {
+    // Update any dynamic risk indicators if needed
+    const riskElements = document.querySelectorAll('.risk-indicator');
+    riskElements.forEach(element => {
+        element.style.width = (score * 100) + '%';
+    });
+}
+</script>
+{% endblock %}
+
+{% block scripts %}
